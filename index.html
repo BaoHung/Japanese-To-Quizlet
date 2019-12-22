@@ -71,6 +71,7 @@
                         success: function (data) {
                             requestsLeft--;
                             $("#countDown").html(requestsLeft);
+                            addText();
                             data = JSON.parse(data).data;
                             word = data[0].japanese[0].word;
                             if (!(word in dict)) {
@@ -89,6 +90,7 @@
                             xhr.addEventListener("readystatechange", function () {
                                 if (this.readyState === 4) {
                                     requestsLeft--;
+                                    addText();
                                     $("#countDown").html(requestsLeft);
                                     var amHanViet = ""
                                     results = JSON.parse(this.responseText).results;
@@ -130,6 +132,7 @@
                             xhr.addEventListener("readystatechange", function () {
                                 if (this.readyState === 4) {
                                     requestsLeft--;
+                                    addText();
                                     $("#countDown").html(requestsLeft);
                                     var amHanViet = ""
                                     mean = JSON.parse(this.responseText).data[0].means[0].mean;
