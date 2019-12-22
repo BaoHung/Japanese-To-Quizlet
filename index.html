@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Kanji to Quizlet</title>
+    <style>
+        body {
+            text-align: center;
+        }
+
+        textarea {
+            display: inline-block;
+            height: 300px;
+            width: 400px;
+            resize: none;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Word list -> Quizlet Import</h1>
+    <textarea id="input"></textarea>
+    <br />
+    <textarea id="output1"></textarea>
+    <textarea id="output2"></textarea>
+    <br />
+    <!-- <input id="KanhStyle" type="checkbox" checked /> Canh-san Style -->
+    <br />
+    <button>GO</button>
+    <label id="countDown"></label>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <script type="text/javascript" src="js/jquery.ajax-cross-origin.min.js"></script>
+    <script>
+        var dict = {};
+        var addText = function () {
+            console.log(dict);
+            enQuizlet = "";
+            vnQuizlet = "";
+            for (var key in dict) {
+                var value = dict[key];
+                enQuizlet += key + " (" + value.hira + ")\t" + value.english + " (" + value.amHanViet + ")\n";
+                vnQuizlet += key + " (" + value.hira + ")\t" + value.vietnamese + " (" + value.amHanViet + ")\n";
+            }
+            $("#output1").val(enQuizlet);
+            $("#output2").val(vnQuizlet);
+        };
+        $(document).ready(function () {
+            // dict["栄養失調"] = {
+            //     word: "栄養失調",
+            //     english: "malnutrition"
+            // }
+            // console.log(dict["栄養失調"]);
+
+            // DEMO
+            $('#input').val("栄養失調\n感染症\n気づく\n井戸\n掘る\n問い合わせる\n個別\n本質的な\n頷く\n緊張する");
+
+            $('body').on('click', 'button', function () {
+                var inputs = $('#input').val().split('\n');
+                inputs = inputs.filter(v => v != '');
+
+                var requestsLeft = inputs.length * 3;
+                $("#countDown").html(requestsLeft);
+                inputs.forEach(function (element) {
+                    // Jisho
+                    $.ajax({
+                        crossOrigin: true,
+                        url: "https://jisho.org/api/v1/search/words?keyword=" + element,
+                        success: function (data) {
+                            requestsLeft--;
+                            $("#countDown").html(requestsLeft);
+                            data = JSON.parse(data).data;
+                            word = data[0].japanese[0].word;
+                            if (!(word in dict)) {
+                                dict[word] = {}
+                            }
+                            dict[word] = {
+                                hira: data[0].japanese[0].reading,
+                                english: data[0].senses[0].english_definitions[0]
+                            };
+
+                            // Mazii - Am Han Viet
+                            method = "post";
+                            url = "https://mazii.net/api/search";
+                            var xhr = new XMLHttpRequest();
+                            xhr._query = word;
+                            xhr.addEventListener("readystatechange", function () {
+                                if (this.readyState === 4) {
+                                    requestsLeft--;
+                                    $("#countDown").html(requestsLeft);
+                                    var amHanViet = ""
+                                    results = JSON.parse(this.responseText).results;
+                                    results.forEach(function (kanji_result) {
+                                        amHanViet += kanji_result.mean.split(',')[0] + " ";
+                                    });
+                                    if (!(this._query in dict)) {
+                                        dict[this._query] = {}
+                                    }
+                                    dict[this._query].amHanViet = amHanViet;
+                                    if (requestsLeft == 0) {
+                                        addText();
+                                    }
+                                }
+                            });
+                            if ("withCredentials" in xhr) {
+                                // XHR has 'withCredentials' property only if it supports CORS
+                                xhr.open(method, url, true);
+                                xhr.setRequestHeader("Content-Type", "application/json");
+                                xhr.setRequestHeader("Accept", "application/json, text/plain, */*");
+                            } else if (typeof XDomainRequest != "undefined") { // if IE use XDR
+                                xhr = new XDomainRequest();
+                                xhr.open(method, url);
+                            } else {
+                                xhr = null;
+                            }
+                            xhr.send(JSON.stringify({
+                                "dict": "javi",
+                                "type": "kanji",
+                                "query": xhr._query,
+                                "page": 1
+                            }));
+
+                            // Mazii - Vietnamese Meaning
+                            method = "post";
+                            url = "https://mazii.net/api/search";
+                            var xhr = new XMLHttpRequest();
+                            xhr._query = word;
+                            xhr.addEventListener("readystatechange", function () {
+                                if (this.readyState === 4) {
+                                    requestsLeft--;
+                                    $("#countDown").html(requestsLeft);
+                                    var amHanViet = ""
+                                    mean = JSON.parse(this.responseText).data[0].means[0].mean;
+                                    if (!(this._query in dict)) {
+                                        dict[this._query] = {}
+                                    }
+                                    dict[this._query].vietnamese = mean;
+
+                                    if (requestsLeft == 0) {
+                                        addText();
+                                    }
+                                }
+                            });
+                            if ("withCredentials" in xhr) {
+                                // XHR has 'withCredentials' property only if it supports CORS
+                                xhr.open(method, url, true);
+                                xhr.setRequestHeader("Content-Type", "application/json");
+                                xhr.setRequestHeader("Accept", "application/json, text/plain, */*");
+                            } else if (typeof XDomainRequest != "undefined") { // if IE use XDR
+                                xhr = new XDomainRequest();
+                                xhr.open(method, url);
+                            } else {
+                                xhr = null;
+                            }
+                            xhr.send(JSON.stringify({
+                                "dict": "javi",
+                                "type": "word",
+                                "query": xhr._query,
+                                "limit": 1,
+                                "page": 1
+                            }));
+                        }
+                    });
+
+                });
+            });
+        });
+    </script>
+</body>
+
+</html>
