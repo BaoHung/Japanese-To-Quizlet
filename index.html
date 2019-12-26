@@ -31,18 +31,25 @@
     <br />
     <button>GO</button>
     <label id="countDown"></label>
+    <br />
+    <br />
+    <div id="notFoundWrapper" style="display: none;">
+        <strong>NOT FOUND</strong>
+        <p id="notFound"></p>
+    </div>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
     <script type="text/javascript" src="js/jquery.ajax-cross-origin.min.js"></script>
     <script>
         var dict = {};
+        var notFound = "";
         var addText = function () {
-            console.log(dict);
+            // console.log(dict);
             enQuizlet = "";
             vnQuizlet = "";
             for (var key in dict) {
                 var value = dict[key];
                 enQuizlet += key + " (" + value.hira + ")\t" + value.english + " (" + value.amHanViet + ")\n";
-                vnQuizlet += key + " (" + value.hira + ")\t" + value.vietnamese + " (" + value.amHanViet + ")\n";
+                vnQuizlet += key + " (" + value.hira + ")\t" + value.english + "; " + value.vietnamese + " (" + value.amHanViet + ")\n";
             }
             $("#output1").val(enQuizlet);
             $("#output2").val(vnQuizlet);
@@ -68,11 +75,21 @@
                     $.ajax({
                         crossOrigin: true,
                         url: "https://jisho.org/api/v1/search/words?keyword=" + element,
+                        error: function (data) {
+                            console.log("error");
+                            console.log(data);
+                        },
                         success: function (data) {
                             requestsLeft--;
                             $("#countDown").html(requestsLeft);
                             addText();
                             data = JSON.parse(data).data;
+                            if (data[0] == undefined) {
+                                notFound += element + "<br />";
+                                $("#notFoundWrapper").show();
+                                $("#notFound").html(notFound);
+                                return;
+                            }
                             word = data[0].japanese[0].word;
                             if (!(word in dict)) {
                                 dict[word] = {}
