@@ -17,6 +17,11 @@
             width: 400px;
             resize: none;
         }
+
+        #notFoundWrapper *,
+        #errorWrapper * {
+            color: red;
+        }
     </style>
 </head>
 
@@ -35,13 +40,45 @@
     <br />
     <div id="notFoundWrapper" style="display: none;">
         <strong>NOT FOUND</strong>
-        <p id="notFound"></p>
+        <label id="notFoundCount"></label>
+        <br />
+        <textarea id="notFound"></textarea>
     </div>
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <div id="errorWrapper" style="display: none;;">
+        <strong>ERROR</strong>
+        <label id="errorCount"></label>
+        <br />
+        <textarea id="error"></textarea>
+    </div>
+    <!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script> -->
+    <script type="text/javascript" src="js/jquery.min.js"></script>
     <script type="text/javascript" src="js/jquery.ajax-cross-origin.min.js"></script>
     <script>
         var dict = {};
-        var notFound = "";
+        var notFound = new Set();
+        var errorWords = new Set();
+
+        var addNotFound = function (word) {
+            notFound.add(word);
+            notFoundHtml = "";
+            notFound.forEach(element => {
+                notFoundHtml += element + "\n";
+            });
+            $("#notFoundWrapper").show();
+            $("#notFound").val(notFoundHtml);
+        }
+
+        var addErrorWord = function (word) {
+            errorWords.add(word);
+            errorHtml = "";
+            errorWords.forEach(element => {
+                errorHtml += element + "\n";
+            });
+            $("#errorWrapper").show();
+            $("#error").val(errorHtml);
+            $("#errorCount").html("(" + errorWords.size + ")");
+        }
+
         var addText = function () {
             // console.log(dict);
             enQuizlet = "";
@@ -65,6 +102,10 @@
             $('#input').val("栄養失調\n感染症\n気づく\n井戸\n掘る\n問い合わせる\n個別\n本質的な\n頷く\n緊張する");
 
             $('body').on('click', 'button', function () {
+                dict = {};
+                notFound = new Set();
+                errorWords = new Set();
+
                 var inputs = $('#input').val().split('\n');
                 inputs = inputs.filter(v => v != '');
 
@@ -75,9 +116,12 @@
                     $.ajax({
                         crossOrigin: true,
                         url: "https://jisho.org/api/v1/search/words?keyword=" + element,
-                        error: function (data) {
-                            console.log("error");
-                            console.log(data);
+                        error: function (data, x) {
+                            // console.log("error");
+                            // console.log(data);
+                            // console.log(x);
+                            // console.log(element);
+                            addErrorWord(element);
                         },
                         success: function (data) {
                             requestsLeft--;
@@ -85,9 +129,7 @@
                             addText();
                             data = JSON.parse(data).data;
                             if (data[0] == undefined) {
-                                notFound += element + "<br />";
-                                $("#notFoundWrapper").show();
-                                $("#notFound").html(notFound);
+                                addNotFound(word);
                                 return;
                             }
                             word = data[0].japanese[0].word;
