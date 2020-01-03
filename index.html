@@ -6,6 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Japanese to Quizlet</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
+        integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
     <style>
         body {
             text-align: center;
@@ -22,6 +24,10 @@
         #errorWrapper * {
             color: red;
         }
+
+        #countDown {
+            display: none;
+        }
     </style>
 </head>
 
@@ -34,10 +40,9 @@
     <br />
     <!-- <input id="KanhStyle" type="checkbox" checked /> Canh-san Style -->
     <br />
-    <button>GO</button>
+    <button class="btn btn-primary" type="button">GO</button>
+    <br />
     <label id="countDown"></label>
-    <br />
-    <br />
     <div id="notFoundWrapper" style="display: none;">
         <strong>Not found on Jisho</strong>
         <label id="notFoundCount"></label>
@@ -51,16 +56,28 @@
         <textarea id="error" disabled></textarea>
     </div>
     <!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script> -->
-    <script type="text/javascript" src="js/jquery.min.js"></script>
+    <!-- <script type="text/javascript" src="js/jquery.min.js"></script> -->
     <!-- <script type="text/javascript" src="js/jquery.ajax-cross-origin.min.js"></script> -->
+
+
+    <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js"
+        integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"
+        integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo"
+        crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js"
+        integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6"
+        crossorigin="anonymous"></script>
     <script>
         // const apiEndPoint = "https://cors-anywhere.herokuapp.com/";
-        const apiEndPoint = "https://quiet-wave-2073.herokuapp.com/";
+        const apiEndPoint = location.hostname != "" ? "https://quiet-wave-2073.herokuapp.com/" : "https://cors-anywhere.herokuapp.com/";
         // const maziiApiEndPoint = apiEndPoint;
         const maziiApiEndPoint = "";
         var dict = {};
         var notFound = new Set();
         var errorWords = new Set();
+        var requestsLeft = 0;
 
         var addNotFound = function (word) {
             notFound.add(word);
@@ -118,6 +135,16 @@
 
             $("#output1").val(enQuizlet);
             $("#output2").val(vnQuizlet);
+
+
+            $('#count').html(requestsLeft);
+            if (requestsLeft == 0) {
+                $('button').html('GO');
+                $('button').removeAttr('disabled');
+                // $('#countDown').hide();
+            } else {
+                // $('#countDown').show();
+            }
         };
         $(document).ready(function () {
             // dict["栄養失調"] = {
@@ -134,6 +161,9 @@
             $('#input').val("割り当てる\n割り当てる\n辛抱\n肥大化\nサムネイル\n・絞り込み・しぼりこみ・Refine, Sàng lọc (V ???)\n・高さ・たかさ・Độ cao\n・保持する・ほじする・Giữ, bảo trì\n冷蔵庫\n・サイトごと\n要因\n栄養失調\n栄養失調\n\n感染症\n気づく\n井戸\n掘る\n問い合わせる\n個別\n本質的な\n頷く\n緊張する");
 
             $('body').on('click', 'button', function () {
+                $('button').html('<span class="spinner-grow spinner-grow-sm" role="status" aria-hidden="true"></span>    Loading...  <label id="count"></label>');
+                $('button').attr('disabled', '');
+
                 dict = {};
                 notFound = new Set();
                 errorWords = new Set();
@@ -143,7 +173,7 @@
                 var inputs = $('#input').val().split('\n');
                 inputs = inputs.filter(v => v != '');
 
-                var requestsLeft = inputs.length * 3;
+                requestsLeft = inputs.length * 3;
                 $("#countDown").html(requestsLeft);
                 inputs.forEach(function (element, index) {
                     element = element.indexOf("・") != -1 ? element.split("・")[1] : element; // Canh san style
